@@ -1,0 +1,5 @@
+FROM golang:1.22
+
+RUN mkdir -p /go/src/adjoe.io
+
+WORKDIR /go/src/adjoe.io

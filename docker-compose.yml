@@ -1,0 +1,58 @@
+version: '3.8'
+services:
+  test-task:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile-dev
+    image: adjoe-test/golang-dev
+    env_file:
+      - local.env
+    ports:
+      - "3333:3000"
+    networks:
+      - adjoe
+    depends_on:
+      - localstack
+      - mysql
+      - awscli
+    volumes:
+      - ./:/go/src/adjoe.io
+    command: ["/bin/sh", "-c", "gin --buildArgs=\"-buildvcs=false\" -t test-task/src run"]
+
+  mysql:
+    image: mysql:8.0
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_DATABASE=adjoe
+      - MYSQL_USER=adjoe
+      - MYSQL_PASSWORD=adjoe
+      - MYSQL_ROOT_PASSWORD=adjoe
+    networks:
+      - adjoe
+
+  localstack:
+    image: localstack/localstack:3.2
+    user: root
+    environment:
+      - DATA_DIR=/tmp/localstack/data
+      - DEFAULT_REGION=eu-central-1
+      - SERVICES=sqs
+    ports:
+      - 4566:4566
+    networks:
+      - adjoe
+
+  awscli:
+    depends_on:
+      - localstack
+    image: adjoe-test/awscli
+    command: 'sqs create-queue --queue-name my-queue --region=eu-central-1 --endpoint-url="http://localstack:4566"'
+    networks:
+      - adjoe
+
+networks:
+  adjoe:
+    name: adjoe-test
+    driver: bridge
+
